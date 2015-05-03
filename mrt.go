@@ -150,19 +150,19 @@ func (d *decoder) size() int {
 type RecordType uint16
 
 const (
-	RecordTypeOSPFv2      RecordType = 11
-	RecordTypeTableDump              = 12
-	RecordTypeTableDumpV2            = 13
-	RecordTypeBGP4MP                 = 16
-	RecordTypeBGP4MPET               = 17
-	RecordTypeISIS                   = 32
-	RecordTypeISISET                 = 33
-	RecordTypeOSPFv3                 = 48
-	RecordTypeOSPFv3ET               = 49
+	TYPE_OSPFv2        RecordType = 11
+	TYPE_TABLE_DUMP               = 12
+	TYPE_TABLE_DUMP_V2            = 13
+	TYPE_BGP4MP                   = 16
+	TYPE_BGP4MP_ET                = 17
+	TYPE_ISIS                     = 32
+	TYPE_ISIS_ET                  = 33
+	TYPE_OSPFv3                   = 48
+	TYPE_OSPFv3_ET                = 49
 )
 
 func (t RecordType) HasExtendedTimestamp() bool {
-	return t == RecordTypeBGP4MPET || t == RecordTypeISISET || t == RecordTypeOSPFv3ET
+	return t == TYPE_BGP4MP_ET || t == TYPE_ISIS_ET || t == TYPE_OSPFv3_ET
 }
 
 type header struct {
@@ -211,8 +211,8 @@ func (r *OSPFv2) DecodeBytes(data []byte) error {
 }
 
 const (
-	TableDumpSubtypeAFIIPv4 = 1
-	TableDumpSubtypeAFIIPv6 = 2
+	TABLE_DUMP_SUBTYPE_AFI_IPv4 = 1
+	TABLE_DUMP_SUBTYPE_AFI_IPv6 = 2
 )
 
 type TableDump struct {
@@ -232,7 +232,7 @@ func (r *TableDump) DecodeBytes(data []byte) error {
 	r.ViewNumber = d.uint16()
 	r.SequenceNumber = d.uint16()
 
-	if r.subtype == TableDumpSubtypeAFIIPv4 {
+	if r.subtype == TABLE_DUMP_SUBTYPE_AFI_IPv4 {
 		ip := d.ipv4()
 		mask := net.CIDRMask(int(d.uint8()), net.IPv4len*8)
 		r.Prefix = &net.IPNet{IP: ip, Mask: mask}
@@ -244,7 +244,7 @@ func (r *TableDump) DecodeBytes(data []byte) error {
 
 	d.skip(1) // Status (1 octet)
 	r.OriginatedTime = d.unixTime()
-	if r.subtype == TableDumpSubtypeAFIIPv4 {
+	if r.subtype == TABLE_DUMP_SUBTYPE_AFI_IPv4 {
 		r.PeerIPAddress = d.ipv4()
 	} else {
 		r.PeerIPAddress = d.ipv6()
@@ -268,12 +268,12 @@ func (r *TableDump) DecodeBytes(data []byte) error {
 }
 
 const (
-	TableDumpV2SubtypePeerIndexTable   = 1
-	TableDumpV2SubtypeRIBIPv4Unicast   = 2
-	TableDumpV2SubtypeRIBIPv4Multicast = 3
-	TableDumpV2SubtypeRIBIPv6Unicast   = 4
-	TableDumpV2SubtypeRIBIPv6Multicast = 5
-	TableDumpV2SubtypeRIBGeneric       = 6
+	TABLE_DUMP_V2_SUBTYPE_PEER_INDEX_TABLE   = 1
+	TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_UNICAST   = 2
+	TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_MULTICAST = 3
+	TABLE_DUMP_V2_SUBTYPE_RIB_IPv6_UNICAST   = 4
+	TABLE_DUMP_V2_SUBTYPE_RIB_IPv6_MULTICAST = 5
+	TABLE_DUMP_V2_SUBTYPE_RIB_GENERIC        = 6
 )
 
 type TableDumpV2PeerIndexTable struct {
@@ -330,8 +330,8 @@ func (r *TableDumpV2RIB) DecodeBytes(data []byte) error {
 	r.decodeHeader(d)
 	r.SequenceNumber = d.uint32()
 
-	if r.subtype == TableDumpV2SubtypeRIBIPv4Unicast ||
-		r.subtype == TableDumpV2SubtypeRIBIPv4Multicast {
+	if r.subtype == TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_UNICAST ||
+		r.subtype == TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_MULTICAST {
 		r.Prefix = d.nlriIPv4()
 	} else {
 		r.Prefix = d.nlriIPv6()
@@ -404,12 +404,12 @@ type TableDumpV2RIBEntry struct {
 }
 
 const (
-	BGP4MPSubtypeStateChange     = 0
-	BGP4MPSubtypeMessage         = 1
-	BGP4MPSubtypeMessageAS4      = 4
-	BGP4MPSubtypeStateChangeAS4  = 5
-	BGP4MPSubtypeMessageLocal    = 6
-	BGP4MPSubtypeMessageAS4Local = 7
+	BGP4MP_SUBTYPE_BGP4MP_STATE_CHANGE      = 0
+	BGP4MP_SUBTYPE_BGP4MP_MESSAGE           = 1
+	BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4       = 4
+	BGP4MP_SUBTYPE_BGP4MP_STATE_CHANGE_AS4  = 5
+	BGP4MP_SUBTYPE_BGP4MP_MESSAGE_LOCAL     = 6
+	BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4_LOCAL = 7
 )
 
 type BGP4MPStateChange struct {
@@ -428,7 +428,7 @@ func (r *BGP4MPStateChange) DecodeBytes(data []byte) error {
 	d := &decoder{data}
 	r.decodeHeader(d)
 
-	if r.subtype == BGP4MPSubtypeStateChange {
+	if r.subtype == BGP4MP_SUBTYPE_BGP4MP_STATE_CHANGE {
 		r.PeerAS = d.as2()
 		r.LocalAS = d.as2()
 	} else {
@@ -468,7 +468,8 @@ func (r *BGP4MPMessage) DecodeBytes(data []byte) error {
 	d := &decoder{data}
 	r.decodeHeader(d)
 
-	as4 := r.subtype == BGP4MPSubtypeMessageAS4 || r.subtype == BGP4MPSubtypeMessageAS4Local
+	as4 := r.subtype == BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4 ||
+		r.subtype == BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4_LOCAL
 	if as4 {
 		r.PeerAS = d.as4()
 		r.LocalAS = d.as4()
@@ -553,49 +554,44 @@ func (r *Reader) Next() (*Record, error) {
 
 	var record Record
 	switch hdrType {
-	case RecordTypeOSPFv2:
+	case TYPE_OSPFv2:
 		record = new(OSPFv2)
-	case RecordTypeTableDump:
+	case TYPE_TABLE_DUMP:
 		switch hdrSubtype {
-		case TableDumpSubtypeAFIIPv4,
-			TableDumpSubtypeAFIIPv6:
+		case TABLE_DUMP_SUBTYPE_AFI_IPv4, TABLE_DUMP_SUBTYPE_AFI_IPv6:
 			record = new(TableDump)
 		default:
 			return nil, fmt.Errorf("unknown MRT record subtype: %d", hdrSubtype)
 		}
-	case RecordTypeTableDumpV2:
+	case TYPE_TABLE_DUMP_V2:
 		switch hdrSubtype {
-		case TableDumpV2SubtypePeerIndexTable:
+		case TABLE_DUMP_V2_SUBTYPE_PEER_INDEX_TABLE:
 			record = new(TableDumpV2PeerIndexTable)
-		case TableDumpV2SubtypeRIBIPv4Unicast,
-			TableDumpV2SubtypeRIBIPv4Multicast,
-			TableDumpV2SubtypeRIBIPv6Unicast,
-			TableDumpV2SubtypeRIBIPv6Multicast:
+		case TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_UNICAST,
+			TABLE_DUMP_V2_SUBTYPE_RIB_IPv4_MULTICAST,
+			TABLE_DUMP_V2_SUBTYPE_RIB_IPv6_UNICAST,
+			TABLE_DUMP_V2_SUBTYPE_RIB_IPv6_MULTICAST:
 			record = new(TableDumpV2RIB)
-		case TableDumpV2SubtypeRIBGeneric:
+		case TABLE_DUMP_V2_SUBTYPE_RIB_GENERIC:
 			record = new(TableDumpV2RIBGeneric)
 		default:
 			return nil, fmt.Errorf("unknown MRT record subtype: %d", hdrSubtype)
 		}
-	case RecordTypeBGP4MP,
-		RecordTypeBGP4MPET:
+	case TYPE_BGP4MP, TYPE_BGP4MP_ET:
 		switch hdrSubtype {
-		case BGP4MPSubtypeStateChange,
-			BGP4MPSubtypeStateChangeAS4:
+		case BGP4MP_SUBTYPE_BGP4MP_STATE_CHANGE, BGP4MP_SUBTYPE_BGP4MP_STATE_CHANGE_AS4:
 			record = new(BGP4MPStateChange)
-		case BGP4MPSubtypeMessage,
-			BGP4MPSubtypeMessageAS4,
-			BGP4MPSubtypeMessageLocal,
-			BGP4MPSubtypeMessageAS4Local:
+		case BGP4MP_SUBTYPE_BGP4MP_MESSAGE,
+			BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4,
+			BGP4MP_SUBTYPE_BGP4MP_MESSAGE_LOCAL,
+			BGP4MP_SUBTYPE_BGP4MP_MESSAGE_AS4_LOCAL:
 			record = new(BGP4MPMessage)
 		default:
 			return nil, fmt.Errorf("unknown MRT record subtype: %d", hdrSubtype)
 		}
-	case RecordTypeISIS,
-		RecordTypeISISET:
+	case TYPE_ISIS, TYPE_ISIS_ET:
 		record = new(ISIS)
-	case RecordTypeOSPFv3,
-		RecordTypeOSPFv3ET:
+	case TYPE_OSPFv3, TYPE_OSPFv3_ET:
 		record = new(OSPFv3)
 	default:
 		return nil, fmt.Errorf("unknown MRT record type: %d", hdrType)
