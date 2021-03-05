@@ -175,6 +175,20 @@ func decodeExtendedCommunitiesAttr(data []byte) (BGPPathAttributeExtendedCommuni
 	return attr, nil
 }
 
+type BGPPathAttributeLargeCommunities []BGPLargeCommunity
+
+type BGPLargeCommunity [12]byte
+
+func decodeLargeCommunitiesAttr(data []byte) (BGPPathAttributeLargeCommunities, error) {
+	d := &decoder{data}
+	n := d.size() / 12
+	attr := make(BGPPathAttributeLargeCommunities, n)
+	for i := 0; i < n; i++ {
+		d.copy(attr[i][:])
+	}
+	return attr, nil
+}
+
 type BGPPathAttribute struct {
 	Flag     uint8
 	TypeCode uint8
@@ -248,6 +262,8 @@ func (r *bgpPathAttributeReader) Next() (*BGPPathAttribute, error) {
 		attr.Value, err = decodeASPathAttr(valueBytes, true)
 	case 18:
 		attr.Value, err = decodeAggregatorAttr(valueBytes, true)
+	case 32:
+		attr.Value, err = decodeLargeCommunitiesAttr(valueBytes)
 	default:
 		return nil, fmt.Errorf("unknown BGP path attribute type code: %d", attr.TypeCode)
 	}
