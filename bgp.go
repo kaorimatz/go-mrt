@@ -44,9 +44,9 @@ func decodeASPathAttr(data []byte, as4 bool) (BGPPathAttributeASPath, error) {
 		segment.Value = make([]AS, n)
 		for i := 0; i < n; i++ {
 			if as4 {
-				segment.Value[i] = AS(d.as4())
+				segment.Value[i] = d.as4()
 			} else {
-				segment.Value[i] = AS(d.as2())
+				segment.Value[i] = d.as2()
 			}
 		}
 
