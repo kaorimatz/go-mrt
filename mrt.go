@@ -542,7 +542,7 @@ func NewReader(r io.Reader) *Reader {
 	}
 }
 
-func (r *Reader) Next() (*Record, error) {
+func (r *Reader) Next() (Record, error) {
 	hdrBytes := make([]byte, 12)
 	if _, err := io.ReadFull(r.reader, hdrBytes); err != nil {
 		return nil, err
@@ -607,5 +607,5 @@ func (r *Reader) Next() (*Record, error) {
 		return nil, err
 	}
 
-	return &record, nil
+	return record, nil
 }
