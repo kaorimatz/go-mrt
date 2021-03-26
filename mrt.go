@@ -113,14 +113,14 @@ func (d *decoder) nlriIPv4() *net.IPNet {
 	l := int(d.uint8())
 	ip := d.ipv4N((l + 7) >> 3)
 	mask := net.CIDRMask(l, net.IPv4len<<3)
-	return &net.IPNet{ip, mask}
+	return &net.IPNet{IP: ip, Mask: mask}
 }
 
 func (d *decoder) nlriIPv6() *net.IPNet {
 	l := int(d.uint8())
 	ip := d.ipv6N((l + 7) >> 3)
 	mask := net.CIDRMask(l, net.IPv6len<<3)
-	return &net.IPNet{ip, mask}
+	return &net.IPNet{IP: ip, Mask: mask}
 }
 
 func (d *decoder) unixTime() time.Time {
